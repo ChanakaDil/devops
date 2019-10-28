@@ -1,0 +1,77 @@
+version: '3'
+services:
+    db:
+        image: postgres:10
+        restart: always
+        env_file: ./env/${ENV}.env
+        networks:
+            - cal
+        logging:
+            driver: syslog
+            options:
+                tag: "cal-db"
+        ports:
+            - "5432:5432"
+        volumes:
+            - db-data-postgres:/var/lib/postgresql/data
+
+    db-mysql:
+        image: mysql:5.7
+        restart: always
+        env_file: ./env/${ENV}.env
+        command: --max_allowed_packet=256M
+        environment:
+            MYSQL_ROOT_PASSWORD: root@123
+        networks:
+            - cal
+        logging:
+            driver: syslog
+            options:
+                tag: "cal-db-mysql"
+        ports:
+            - "3306:3306"
+        volumes:
+            - db-data-mysql:/var/lib/mysql
+
+    rabbitmq:
+        image: rabbitmq:management
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        networks:
+            - cal
+
+    service:
+        image: ${REG}/cal-portal-backend:${SERVICE_TAG}
+        restart: always
+        env_file: ./env/${ENV}.env
+        ports:
+            - "8080:8080"
+        networks:
+            - cal
+        logging:
+            driver: syslog
+            options:
+                tag: "cal-service"
+
+    web:
+        image: ${REG}/cal-portal-web:${WEB_TAG}
+        restart: always
+        ports:
+            - "80:80"
+            - "443:443"
+        networks:
+            - cal
+        logging:
+            driver: syslog
+            options:
+                tag: "cal-web"
+        volumes:
+            - ./ssl:/usr/share/nginx/ssl
+
+volumes:
+    db-data-mysql:
+    db-data-postgres:
+
+networks:
+    cal:
